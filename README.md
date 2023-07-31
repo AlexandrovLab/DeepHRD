@@ -24,6 +24,7 @@ DeepHRD encompasses three separately trained models to perform inference. Each m
 * Breast cancer - Flash frozen (--modelType breast_flash_frozen)
 * Ovarian cancer - Flash frozen (--modelType ovarian_flash_frozen)
 
+## Pipeline
 ![pipeline](pipeline.png)
 
 For specifics on how the models were trained, tested, and externally validated, please see our online preprint [citation](#citation).
@@ -44,7 +45,7 @@ Instructions to perform a prediction on a single image or collection of images u
 ```bash
 $ python3 install_model --modelType breast_ffpe
 ```
-2. Use the DeepHRD_predict.py script to perform the prediction. This script will handle all preprocessing and iteratie through the complete pipeline.
+2. Use the DeepHRD_predict.py script to perform the prediction. This script will handle all preprocessing and iteratie through the complete [pipeline](#pipeline).
  See [optional parameters](#optional-or-custom-to-each-run) for a complete list of each step. The raw whole-slide images should be placed under your project path within a folder 
 that matches your project name (i.e. if --projectPath /your/project/path/ and --project BRCA; then place the images within the path /your/project/path/BRCA/).
 ```bash

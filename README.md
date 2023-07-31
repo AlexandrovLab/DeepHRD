@@ -25,7 +25,7 @@ DeepHRD encompasses three separately trained models to perform inference. Each m
 
 ![pipeline](pipeline.png)
 
-For specifics on how the models were trained, tested, and externally validated, please see our online preprint [citation](#Citation).
+For specifics on how the models were trained, tested, and externally validated, please see our online preprint [citation](#citation).
 
 ## Prerequisites
 The framework is written in Python; however, it also requires the following software and infrastructure:
@@ -38,12 +38,12 @@ The framework is written in Python; however, it also requires the following soft
 
 ## Prediction
 Instructions to perform a prediction on a single image or collection of images using one of the pre-trained models for breast or ovarian cancer:
-1. [THIS IS NOT CURRENTLY SUPPORTED] - Download the relevant pre-trained model. See [Parameters](#Parameters) for a list of possible models under the --modelType argument.
+1. [THIS IS NOT CURRENTLY SUPPORTED] - Download the relevant pre-trained model. See [Parameters](#parameters) for a list of possible models under the --modelType argument.
 ```bash
 $ python3 install_model --modelType breast_ffpe
 ```
 2. Use the DeepHRD_predict.py script to perform the prediction. This script will handle all preprocessing and iteratie through the complete pipeline.
- See [optional parameters](#Optional) for a complete list of each step. The raw whole-slide images should be placed under your project path within a folder 
+ See [optional parameters](#optional) for a complete list of each step. The raw whole-slide images should be placed under your project path within a folder 
 that matches your project name (i.e. if --projectPath /your/project/path/ and --project BRCA; then place the images within the path /your/project/path/BRCA/).
 ```bash
 python3 DeepHRD_predict.py --projectPath /your/project/path/ --project yourProjectNameSuchAsBRCA --output /your/output/path/  --model /path/to/models/ --workers 16 --BN_reps 10 --reportVerbose --preprocess --stainNorm --generateDataSets --predict5x --pullROIs --predict20x --predictionMasks
@@ -54,14 +54,14 @@ separately within the same output path with the prefix (predictions_...csv).
 If --predictionMasks is provided, the 5x and 20x prediction masks are saved as PDFs within the following path: /path/to/output/probability_masks/.
 
 
-### Testing using a custom model**
-See [Testing the new model](#Testing-on-the-new-model)
+### Testing using a custom model
+See [Testing the new model](#testing-on-the-new-model)
 
 
 ## Training a new model
 Instructions for training a new model separate from the pre-trained models provided in the base package.
 1. Determine specifics for the training (i.e. maximum training epochs, dropout rate, number of gpus to use if available, number of workers/cpus to use, number of ensemble models, etc.)
-See [all available parameters](#Parameters) for training/testing a model below.
+See [all available parameters](#parameters) for training/testing a model below.
 2. Use the DeepHRD_train.py script to train the desired ensemble models. 
 ```bash
 python3 DeepHRD_train.py --projectPath /your/project/path/ --project yourProjectNameSuchAsBRCA --output /your/output/path/ --metadata /path/to/your/metadatafile.txt --ensemble 5 --dropoutRate 0.5 --stainNorm --generateDataSets --train5x --calcFeatures --pullROIs --train20x --workers 16 --epochs 200
@@ -89,7 +89,7 @@ pre-partitioned into a train, validation, and test set. We recommend using a tra
 file. 
 
 | slide | patient | label | softLabel | subtype | partition |
-| ----- | --- | --- | --- | ---- | --- |
+| ------ | ----- | --- | --- | ----- | --- |
 | TCGA-A1-A0SE-01A-01-BS1.bc41fb6d-f6a5-495c-b429-80d289f0bda1.svs | TCGA-A1-A0SE | 21.0 | 0.39875 | Luminal A | test |
 
 

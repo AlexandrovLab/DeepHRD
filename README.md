@@ -19,9 +19,10 @@ uncertainty. Thus, for each tissue slide, it is recommended to run inference wit
 This will provide confidence intervals in the final scoring for any given patient/slide.
 
 DeepHRD encompasses three separately trained models to perform inference. Each model can be specified when running the inference module:
-	* Breast cancer - FFPE (--modelType breast_ffpe)
-	* Breast cancer - Flash frozen (--modelType breast_flash_frozen)
-	* Ovarian cancer - Flash frozen (--modelType ovarian_flash_frozen)
+
+* Breast cancer - FFPE (--modelType breast_ffpe)
+* Breast cancer - Flash frozen (--modelType breast_flash_frozen)
+* Ovarian cancer - Flash frozen (--modelType ovarian_flash_frozen)
 
 ![pipeline](pipeline.png)
 
@@ -29,11 +30,12 @@ For specifics on how the models were trained, tested, and externally validated, 
 
 ## Prerequisites
 The framework is written in Python; however, it also requires the following software and infrastructure:
-	* Python version 3.6 or newer
-	* Pytorch (tested on torch>=1.13.1)
-	* Openslide
-	* NVIDIA GPU (tested on M60s via AWS EC2 instances and A100s on a custom cluster. Testing included the use of single GPUs as well as multiple GPUs in parallel)
-	* See requirements.txt for a full list of Python packages used during training and testing.
+
+* Python version 3.6 or newer
+* Pytorch (tested on torch>=1.13.1)
+* Openslide
+* NVIDIA GPU (tested on M60s via AWS EC2 instances and A100s on a custom cluster. Testing included the use of single GPUs as well as multiple GPUs in parallel)
+* See requirements.txt for a full list of Python packages used during training and testing.
 
 
 ## Prediction
@@ -43,7 +45,7 @@ Instructions to perform a prediction on a single image or collection of images u
 $ python3 install_model --modelType breast_ffpe
 ```
 2. Use the DeepHRD_predict.py script to perform the prediction. This script will handle all preprocessing and iteratie through the complete pipeline.
- See [optional parameters](#optional) for a complete list of each step. The raw whole-slide images should be placed under your project path within a folder 
+ See [optional parameters](#optional-or-custom-to-each-run) for a complete list of each step. The raw whole-slide images should be placed under your project path within a folder 
 that matches your project name (i.e. if --projectPath /your/project/path/ and --project BRCA; then place the images within the path /your/project/path/BRCA/).
 ```bash
 python3 DeepHRD_predict.py --projectPath /your/project/path/ --project yourProjectNameSuchAsBRCA --output /your/output/path/  --model /path/to/models/ --workers 16 --BN_reps 10 --reportVerbose --preprocess --stainNorm --generateDataSets --predict5x --pullROIs --predict20x --predictionMasks
@@ -55,7 +57,7 @@ If --predictionMasks is provided, the 5x and 20x prediction masks are saved as P
 
 
 ### Testing using a custom model
-See [Testing the new model](#testing-on-the-new-model)
+See [Testing the new model](#testing-the-new-model)
 
 
 ## Training a new model
@@ -69,7 +71,7 @@ python3 DeepHRD_train.py --projectPath /your/project/path/ --project yourProject
 
 
 ### Testing the new model
-Instructions to perform a prediction on a single image or collection of images using a newly trained model. This process is similar to the base [prediction](#Prediction) with
+Instructions to perform a prediction on a single image or collection of images using a newly trained model. This process is similar to the base [prediction](#prediction) with
 several modificiations:
 1. After training a new ensemble of models:
 	a. Create a new models directory. 
@@ -89,7 +91,7 @@ pre-partitioned into a train, validation, and test set. We recommend using a tra
 file. 
 
 | slide | patient | label | softLabel | subtype | partition |
-| ------ | ----- | --- | --- | ----- | --- |
+| ----- | ----- | --- | --- | ----- | --- |
 | TCGA-A1-A0SE-01A-01-BS1.bc41fb6d-f6a5-495c-b429-80d289f0bda1.svs | TCGA-A1-A0SE | 21.0 | 0.39875 | Luminal A | test |
 
 

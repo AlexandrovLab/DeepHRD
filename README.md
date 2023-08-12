@@ -1,7 +1,7 @@
 # DeepHRD
 Deep learning predicts HRD and platinum response from histology slides in breast and ovarian cancer
 
-[medRxiv](https://www.medrxiv.org/content/10.1101/2023.02.23.23285869v1.full-text) | [Citation](#citation)
+[medRxiv](https://www.medrxiv.org/content/10.1101/2023.02.23.23285869v1.full-text) | [Citation](#citation) | [License](#license)
 
 ![schematic](schematic.png)
 

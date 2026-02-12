@@ -147,7 +147,7 @@ file.
 
 ## Citation
 
-Bergstrom EN, Abbasi A, Diaz-Gay M, Ladoire S, Lippman SM, and Alexandrov LB. Deep learning predicts homologous recombination deficiency and platinum response from histology slides in breast and ovarian cancers. *J Clin Oncol*. 2023. [https://doi.org/10.1200/JCO.23.02641](https://doi.org/10.1200/JCO.23.02641)
+Bergstrom EN, Abbasi A, Díaz-Gay M, Galland L, Ladoire S, Lippman SM, Alexandrov LB. Deep learning artificial intelligence predicts homologous recombination deficiency and platinum response from histologic slides. *Journal of Clinical Oncology*. 2024; JCO.23.02641. [doi:10.1200/JCO.23.02641](https://doi.org/10.1200/JCO.23.02641)
 
 ## License
 Academic Software License: © 2022 University of California, San Diego ("Institution"). Academic or nonprofit researchers are permitted to use this Software (as defined below) subject to Paragraphs 1-4:

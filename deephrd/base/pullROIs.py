@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import random
 import os
 import PIL.Image as Image
-import pca 
+from . import pca 
 import argparse
 import multiprocessing as mp
 
@@ -58,7 +58,7 @@ def main ():
 	parser.add_argument('--feature_vectors_test', type=str, default='', help='Path to the testing feature vectors.')
 	parser.add_argument('--output', type=str, default='.', help='Path to the output where the new tiles will be saved')
 	parser.add_argument('--maxROI', default=10000, type=int, help='Number of maximum ROIs that can be selected')
-	parser.add_argument('--max_cpu', default=0, type=int, help='Maximum number of CPUs to utilize for parallelization (default: None - utilizes all available cpus)')
+	parser.add_argument('--max_cpu', default=0, type=int, help='Maximum number of CPUs to utilize for parallelization (default: 0 - uses all available cpus)')
 
 	args = parser.parse_args()
 	

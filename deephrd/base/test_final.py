@@ -25,8 +25,8 @@ import os
 import sys
 import argparse
 import numpy as np
-from model import ResNet_dropout as RNN
-import utilsModel as ut
+from .model import ResNet_dropout as RNN
+from . import utilsModel as ut
 
 
 
@@ -89,9 +89,9 @@ def main ():
 	model=model.to(device)
 
 	if gpu_available:
-		ch = torch.load(args.model)
+		ch = torch.load(args.model, weights_only=False)
 	else:
-		ch = torch.load(args.model, map_location=torch.device('cpu'))
+		ch = torch.load(args.model, map_location=torch.device('cpu'), weights_only=False)
 	model.load_state_dict(ch['state_dict'])
 	cudnn.benchmark = True
 

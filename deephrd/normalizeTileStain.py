@@ -10,7 +10,7 @@
 
 
 import os
-import normalizeStaining
+from deephrd import normalizeStaining
 import sys
 import multiprocessing as mp
 

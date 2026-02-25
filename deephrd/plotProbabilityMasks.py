@@ -12,7 +12,7 @@ import cv2
 import numpy as np
 import matplotlib
 from matplotlib.patches import Rectangle
-import base.utilsModel as util
+from deephrd.base import utilsModel as util
 import multiprocessing as mp
 
 def convertColor (color):

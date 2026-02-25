@@ -8,9 +8,9 @@ import torchvision.transforms as transforms
 import os
 import numpy as np
 import argparse
-from model import ResNet_dropout as RNN
+from .model import ResNet_dropout as RNN
 from snorkel.classification import cross_entropy_with_probs
-import utilsModel as ut
+from . import utilsModel as ut
 
 
 parser = argparse.ArgumentParser(description='Multi-Resolution biomarker classifier training script - 2022')

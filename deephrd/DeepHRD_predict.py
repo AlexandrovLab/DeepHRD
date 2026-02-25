@@ -19,14 +19,14 @@
 
 import argparse
 import os
-import preprocessing_with_tile_data_overlap as preproc
-import normalizeTileStain
-import gatherDataSets
-from base import utilsModel
+from deephrd import preprocessing_with_tile_data_overlap as preproc
+from deephrd import normalizeTileStain
+from deephrd import gatherDataSets
+from deephrd.base import utilsModel
 import shutil
 import sys
 import pandas as pd
-import plotProbabilityMasks
+from deephrd import plotProbabilityMasks
 import multiprocessing
 import torch
 
@@ -49,37 +49,54 @@ def main ():
 	print("Beginning analysis", flush=True)
 	print("-----------------------------------------------\n\n", flush=True)
 
-	parser = argparse.ArgumentParser(description='Multi-Resolution biomarker classifier prediction - 2022')
-	parser.add_argument('--projectPath', type=str, default='', help='Path to the project directory')
-	parser.add_argument('--project', type=str, default='BRCA', help='Project Name where the slides are located. projectPath + project should be the location to the slides.')
-	parser.add_argument('--output', type=str, default=None, help='Path to the output and predictions are saved. Recommended projectPath + "output/')
-	parser.add_argument('--metadata', type=str, default='', help='Path to the metadata file that contains the labels for each sample')
-	parser.add_argument('--model', type=str, default='models/breast_ffpe', help='Path to the pretrained models')
-	parser.add_argument('--modelType', type=str, default='breast_ffpe', help='Specify the trained model for testing.')
+	parser = argparse.ArgumentParser(
+		description='Multi-Resolution biomarker classifier prediction - 2022',
+		add_help=False,
+	)
+	required_group = parser.add_argument_group('required arguments')
+	optional_group = parser.add_argument_group('optional arguments')
+	optional_group.add_argument('-h', '--help', action='help', help='show this help message and exit')
 
-	parser.add_argument('--tileOverlap', default=0.0, type=float, help='The proportion of overlap between adjacenet tiles during preprocessing.')
-	parser.add_argument('--stainNorm', action='store_true', help='Normalize the staining colors')
-	parser.add_argument('--batch_size', type=int, default=64, help='How many tiles to include for each mini-batch (default: 64)')
-	parser.add_argument('--workers', default=4, type=int, help='Number of data loading workers (default: 4)')
-	parser.add_argument('--BN_reps', type=int, default=10, help='Number of MonteCarlo iterations to perform for bayesian network estimation (default is 10: sufficient for a dropout<0.2)')
-	parser.add_argument('--max_gpu', default=0, type=int, help='Number of gpus to use (default: 0 - uses all available)')
-	parser.add_argument('--max_cpu', default=1, type=int, help='Maximum number of CPUs to utilize for parallelization (default: None - utilizes all available cpus)')
-	parser.add_argument('--ensemble', default=5, type=int, help='Number of ensemble models to test')
-	parser.add_argument('--dropoutRate', default=0.2, type=float, help='Rate of dropout to be used within the fully connected layers.')
-	parser.add_argument('--maxROI', default=10000, type=int, help='Number of maximum ROIs that can be selected.')
-	parser.add_argument('--reportVerbose', action='store_true', help='Print final report to standard out once complete.')
-	parser.add_argument('--python', type=str, default='python3', help='Specify the python version.')
+	required_group.add_argument('--projectDir', type=str, required=True, help='Full path to the slide folder.')
+	optional_group.add_argument('--output', type=str, default=None, help='Path where output and predictions are saved. Defaults to projectPath + "output/".')
+	required_group.add_argument('--metadata', type=str, required=True, help='Path to the metadata file that contains the labels for each sample')
+	required_group.add_argument('--model', type=str, required=True, help='Path to the pretrained models')
+	required_group.add_argument('--modelType', type=str, required=True, help='Specify the trained model for testing.')
 
-	parser.add_argument('--preprocess', action='store_true', help='Preprocess, filter, and tile WSI')
-	parser.add_argument('--generateDataSets', action='store_true', help='Generate the initial 5x datasets')
-	parser.add_argument('--predict5x', action='store_true', help='Run inference for a 5x ensemble model.')
-	parser.add_argument('--pullROIs', action='store_true', help='Pull regions of interest using each 5x model.')
-	parser.add_argument('--predict20x', action='store_true', help='Run inference for a 20x ensemble model.')
-	parser.add_argument('--predictionMasks', action='store_true', help='Generate prediction masks for each tissue sample.')
-	parser.add_argument('--customThreshold', default=None, type=float, help='Threshold to use if running inference on custom models.')
+	optional_group.add_argument('--tileOverlap', default=0.0, type=float, help='The proportion of overlap between adjacenet tiles during preprocessing.')
+	optional_group.add_argument('--stainNorm', action='store_true', help='Normalize the staining colors')
+	optional_group.add_argument('--batch_size', type=int, default=64, help='How many tiles to include for each mini-batch (default: 64)')
+	optional_group.add_argument('--workers', default=4, type=int, help='Number of data loading workers (default: 4)')
+	optional_group.add_argument('--BN_reps', type=int, default=10, help='Number of MonteCarlo iterations to perform for bayesian network estimation (default is 10: sufficient for a dropout<0.2)')
+	optional_group.add_argument('--max_gpu', default=0, type=int, help='Number of gpus to use (default: 0 - uses all available)')
+	optional_group.add_argument('--max_cpu', default=0, type=int, help='Maximum number of CPUs to utilize for parallelization (default: 0 - uses all available cpus)')
+	optional_group.add_argument('--ensemble', default=5, type=int, help='Number of ensemble models to test')
+	optional_group.add_argument('--dropoutRate', default=0.2, type=float, help='Rate of dropout to be used within the fully connected layers.')
+	optional_group.add_argument('--maxROI', default=10000, type=int, help='Number of maximum ROIs that can be selected.')
+	optional_group.add_argument('--reportVerbose', action='store_true', help='Print final report to standard out once complete.')
+	optional_group.add_argument('--python', type=str, default='python3', help='Specify the python version.')
+
+	optional_group.add_argument('--preprocess', action='store_true', help='Preprocess, filter, and tile WSI')
+	optional_group.add_argument('--generateDataSets', action='store_true', help='Generate the initial 5x datasets')
+	optional_group.add_argument('--predict5x', action='store_true', help='Run inference for a 5x ensemble model.')
+	optional_group.add_argument('--pullROIs', action='store_true', help='Pull regions of interest using each 5x model.')
+	optional_group.add_argument('--predict20x', action='store_true', help='Run inference for a 20x ensemble model.')
+	optional_group.add_argument('--predictionMasks', action='store_true', help='Generate prediction masks for each tissue sample.')
+	optional_group.add_argument('--customThreshold', default=None, type=float, help='Threshold to use if running inference on custom models.')
 
 
 	args = parser.parse_args()
+
+	project_dir = os.path.abspath(args.projectDir)
+	projectPath = os.path.dirname(project_dir)
+	project = os.path.basename(project_dir)
+
+	# Patch: when no stage flags are provided, enable all stages by default.
+	preprocess = False
+	generateDataSets = False
+	predict5x = False
+	pullROIs = False
+	predict20x = False
 
 	if not args.preprocess and not args.generateDataSets and not args.predict5x and not args.pullROIs and not args.predict20x:
 		preprocess = True
@@ -111,13 +128,13 @@ def main ():
 		threshold = args.customThreshold
 
 	if args.output is None:
-		outputPath = os.path.join(args.projectPath, "output")
+		outputPath = os.path.join(projectPath, "output")
 	else:
 		outputPath = args.output
 	if not os.path.exists(outputPath):
 		os.makedirs(outputPath)
 
-	tilePath = os.path.join(args.projectPath, "tiles_png")
+	tilePath = os.path.join(projectPath, "tiles_png")
 
 	BN_reps = args.BN_reps
 	if args.dropoutRate == 0.0:
@@ -132,19 +149,19 @@ def main ():
 
 		if preprocess:
 			print("\t\tFiltering and tiling image(s)...", end='', flush=True)
-			preproc.preprocess_images(args.project, args.projectPath, args.max_cpu, save_top_tiles, save_data, args.tileOverlap)
+			preproc.preprocess_images(project, projectPath, args.max_cpu, save_top_tiles, save_data, args.tileOverlap)
 			print("done")
 		if args.stainNorm:
 			print("\t\tNormalizing tissue staining...", end='', flush=True)
-			normalizeTileStain.multiprocess_stainNorm(tilePath, os.path.join(args.projectPath, "tiles_png_stainNorm"), args.max_cpu)
+			normalizeTileStain.multiprocess_stainNorm(tilePath, os.path.join(projectPath, "tiles_png_stainNorm"), args.max_cpu)
 			print("done", flush=True)
 
 	if args.stainNorm:
-		tilePath = os.path.join(args.projectPath, "tiles_png_stainNorm")
+		tilePath = os.path.join(projectPath, "tiles_png_stainNorm")
 
 	if generateDataSets:
 		print("\t\tGathering datasets for inference...", end='', flush=True)
-		gatherDataSets.generateDataStructures(args.project, args.projectPath, args.metadata, tilePath, outputPath, True)
+		gatherDataSets.generateDataStructures(project, projectPath, args.metadata, tilePath, outputPath, True)
 		print("done", flush=True)
 
 
@@ -152,10 +169,10 @@ def main ():
 	###### Set up GPU parallelization if available #########
 	########################################################
 	maxAvailableGPUs = torch.cuda.device_count()
-	if args.max_gpu:
-		max_seed = min(args.max_gpu, maxAvailableGPUs)
+	if args.max_gpu is None or args.max_gpu <= 0:
+		max_seed = maxAvailableGPUs if maxAvailableGPUs > 0 else 1
 	else:
-		max_seed = 1
+		max_seed = min(args.max_gpu, maxAvailableGPUs)
 	
 	if max_seed > args.ensemble:
 		max_seed = args.ensemble	
@@ -194,8 +211,8 @@ def main ():
 		sys.stdout.flush()
 		utilsModel.combinePredictions("5x", outputPath, args.ensemble, args.dropoutRate)
 
-	if args.max_cpu == None:
-		max_cpu = 0
+	if args.max_cpu is None:
+		args.max_cpu = 0
 
 
 
@@ -206,7 +223,7 @@ def main ():
 		pool = multiprocessing.Pool(max_seed * max_process_per_gpu)
 		results = []
 		for i in range(max_seed):
-			r = pool.apply_async(utilsModel.runMultiGpuROIs, args=(i, models_parallel[i], args.project, args.projectPath, args.python, outputPath, args.maxROI, args.max_cpu, True))
+			r = pool.apply_async(utilsModel.runMultiGpuROIs, args=(i, models_parallel[i], project, projectPath, args.python, outputPath, args.maxROI, args.max_cpu, True))
 		results.append(r)
 		pool.close()
 		pool.join()
@@ -249,7 +266,9 @@ def main ():
 	########################################################
 	print("\n\tFinalizing results:", flush=True)
 	print("\t\tCalculating multi-resolution prediction...", end='', flush=True)
-	utilsModel.multiResolution(outputPath, args.ensemble, args.dropoutRate, threshold)
+	# Patch: only compute multi-resolution output when 5x and 20x have run.
+	if predict5x and predict20x:
+		utilsModel.multiResolution(outputPath, args.ensemble, args.dropoutRate, threshold)
 	print("done", flush=True)
 
 	if args.predictionMasks:
@@ -259,8 +278,8 @@ def main ():
 		os.makedirs(os.path.join(outputPath, "probability_masks"))
 		bestModel = utilsModel.selectBestModel(os.path.join(outputPath, "predictions_5x_n" + str(args.ensemble) + "_models_" + str(args.dropoutRate) + ".csv"))
 		plotProbabilityMasks.multiprocess_plotMasks(tilePath, os.path.join(outputPath, bestModel, "ROI"), os.path.join(outputPath, bestModel, "feature_vectors_test_5x.tsv"), \
-											os.path.join(outputPath, bestModel, "feature_vectors_test_20x.tsv"), os.path.join(args.projectPath, "objectiveInfo.txt"), \
-											os.path.join(args.projectPath, "slideNumberToSampleName.txt"), outputPath, args.max_cpu)
+											os.path.join(outputPath, bestModel, "feature_vectors_test_20x.tsv"), os.path.join(projectPath, "objectiveInfo.txt"), \
+											os.path.join(projectPath, "slideNumberToSampleName.txt"), outputPath, args.max_cpu)
 		print("done", flush=True)
 
 	if args.reportVerbose:
@@ -268,16 +287,19 @@ def main ():
 		print("\t\t+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 		print("\t\tSummary Report:")
 		print("\t\t\t\t\t\tSample\t\t  DeepHRD-Prediction\tProbability\t\t    CI-95\t\t p-value\n")
-		finalResults = pd.read_csv(os.path.join(outputPath, "DeepHRD_report_5x_20x_n" + str(args.ensemble) + "_dropout" + str(args.dropoutRate) + ".csv"), header=0, index_col=0)
-		for sample in finalResults.index:
-			if finalResults.loc[sample, 'HRD-prediction'] == 0:
-				classification = 'HRP'
-			else:
-				classification = 'HRD'
-			if finalResults.loc[sample, 'p-value'] > 0.01:
-				classification = "Inconc."
+		if predict5x and predict20x:
+			finalResults = pd.read_csv(os.path.join(outputPath, "DeepHRD_report_5x_20x_n" + str(args.ensemble) + "_dropout" + str(args.dropoutRate) + ".csv"), header=0, index_col=0)
+			for sample in finalResults.index:
+				if finalResults.loc[sample, 'HRD-prediction'] == 0:
+					classification = 'HRP'
+				else:
+					classification = 'HRD'
+				if finalResults.loc[sample, 'p-value'] > 0.01:
+					classification = "Inconc."
 
-			print("\t\t".join(["\t\t\t", sample.split("/")[-1].split(".")[0], classification, "  " + str(round(finalResults.loc[sample, 'Multi-Res-prediction'], 4)), "[" +str(round(finalResults.loc[sample, 'LowerCI'], 3)) + "-" + str(round(finalResults.loc[sample, 'UpperCI'], 3)) + "]", '{:.2E}'.format(finalResults.loc[sample, 'p-value'])]))
+				print("\t\t".join(["\t\t\t", sample.split("/")[-1].split(".")[0], classification, "  " + str(round(finalResults.loc[sample, 'Multi-Res-prediction'], 4)), "[" +str(round(finalResults.loc[sample, 'LowerCI'], 3)) + "-" + str(round(finalResults.loc[sample, 'UpperCI'], 3)) + "]", '{:.2E}'.format(finalResults.loc[sample, 'p-value'])]))
+		else:
+			print("\t\tSummary report unavailable: run both 5x and 20x predictions.")
 		print("\n\n")
 
 	print("\t\tComplete final reports can be found under: ", outputPath)

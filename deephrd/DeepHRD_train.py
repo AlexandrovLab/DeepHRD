@@ -19,14 +19,14 @@
 
 import argparse
 import os
-import preprocessing_with_tile_data_overlap as preproc
-import normalizeTileStain
-import gatherDataSets
-from base import utilsModel
+from deephrd import preprocessing_with_tile_data_overlap as preproc
+from deephrd import normalizeTileStain
+from deephrd import gatherDataSets
+from deephrd.base import utilsModel
 import shutil
 import sys
 import pandas as pd
-import plotProbabilityMasks
+from deephrd import plotProbabilityMasks
 import multiprocessing
 import torch
 
@@ -45,39 +45,48 @@ def main ():
 	print("Beginning analysis", flush=True)
 	print("-----------------------------------------------\n\n", flush=True)
 
-	parser = argparse.ArgumentParser(description='Multi-Resolution biomarker classifier prediction - 2023')
+	parser = argparse.ArgumentParser(
+		description='Multi-Resolution biomarker classifier prediction - 2023',
+		add_help=False,
+	)
+	required_group = parser.add_argument_group('required arguments')
+	optional_group = parser.add_argument_group('optional arguments')
+	optional_group.add_argument('-h', '--help', action='help', help='show this help message and exit')
 
-	parser.add_argument('--projectPath', type=str, default='', help='Path to the project directory')
-	parser.add_argument('--project', type=str, default='BRCA', help='Project Name where the slides are located. projectPath + project should be the location to the slides.')
-	parser.add_argument('--output', type=str, default=None, help='Path to the output and trained models are saved. Recommended projectPath + "output/')
-	parser.add_argument('--metadata', type=str, default='', help='Path to the metadata file that contains the labels for each sample')
+	required_group.add_argument('--projectDir', type=str, required=True, help='Full path to the slide folder.')
+	required_group.add_argument('--metadata', type=str, required=True, help='Path to the metadata file that contains the labels for each sample')
 
-	parser.add_argument('--tileOverlap', default=0.0, type=float, help='The proportion of overlap between adjacenet tiles during preprocessing.')
-	parser.add_argument('--stainNorm', action='store_true', help='Normalize the staining colors')
-	parser.add_argument('--softLabel', action='store_true', help='Use soft labeling for target labels (i.e. float between [0,1])')
+	optional_group.add_argument('--output', type=str, default=None, help='Path to the output and trained models are saved. Defaults to projectPath + "output/".')
+	optional_group.add_argument('--tileOverlap', default=0.0, type=float, help='The proportion of overlap between adjacenet tiles during preprocessing.')
+	optional_group.add_argument('--stainNorm', action='store_true', help='Normalize the staining colors')
+	optional_group.add_argument('--softLabel', action='store_true', help='Use soft labeling for target labels (i.e. float between [0,1])')
 	# parser.add_argument('--partitionSamples', action='store_true', help='Flag to randomly generate train/validation/test sample partitions. IF NOT INCLUDED, THE COLUMN WITHIN THE METADATA FILE WILL BE USED.')
-	parser.add_argument('--trainTestSplit', type=float, default=None, help='Proportion of samples to use for training samples in the train/test partition. Only needed if samples are not already split.')
-	parser.add_argument('--checkpointModel', type=str, default=None, help='Path to a pretrained model; either a checkpoint or for transfer learning.')
-	parser.add_argument('--batch_size', type=int, default=64, help='How many tiles to include for each mini-batch (default: 64)')
-	parser.add_argument('--workers', default=4, type=int, help='number of data loading workers (default: 4)')
-	parser.add_argument('--max_gpu', default=None, type=int, help='Number of gpus to use (default: 0 - uses all available)')
-	parser.add_argument('--max_cpu', default=1, type=int, help='Maximum number of CPUs to utilize for parallelization (default: None - utilizes all available cpus)')
-	parser.add_argument('--ensemble', default=5, type=int, help='Number of ensemble models to train.')
-	parser.add_argument('--dropoutRate', default=0.2, type=float, help='Rate of dropout to be used within the fully connected layers.')
-	parser.add_argument('--maxROI', default=10000, type=int, help='Number of maximum ROIs that can be selected.')
-	parser.add_argument('--python', type=str, default='python3', help='Specify the python version..')
+	optional_group.add_argument('--trainTestSplit', type=float, default=None, help='Proportion of samples to use for training samples in the train/test partition. Only needed if samples are not already split.')
+	optional_group.add_argument('--checkpointModel', type=str, default=None, help='Path to a pretrained model; either a checkpoint or for transfer learning.')
+	optional_group.add_argument('--batch_size', type=int, default=64, help='How many tiles to include for each mini-batch (default: 64)')
+	optional_group.add_argument('--workers', default=4, type=int, help='number of data loading workers (default: 4)')
+	optional_group.add_argument('--max_gpu', default=0, type=int, help='Number of gpus to use (default: 0 - uses all available)')
+	optional_group.add_argument('--max_cpu', default=0, type=int, help='Maximum number of CPUs to utilize for parallelization (default: 0 - uses all available cpus)')
+	optional_group.add_argument('--ensemble', default=5, type=int, help='Number of ensemble models to train.')
+	optional_group.add_argument('--dropoutRate', default=0.2, type=float, help='Rate of dropout to be used within the fully connected layers.')
+	optional_group.add_argument('--maxROI', default=10000, type=int, help='Number of maximum ROIs that can be selected.')
+	optional_group.add_argument('--python', type=str, default='python3', help='Specify the python version..')
 	
-	parser.add_argument('--preprocess', action='store_true', help='Preprocess, filter, and tile WSI')
-	parser.add_argument('--generateDataSets', action='store_true', help='Generate the initial 5x datasets')
-	parser.add_argument('--train5x', action='store_true', help='Train a 5x ensemble model.')
-	parser.add_argument('--train20x', action='store_true', help='Train a 20x ensemble model.')
-	parser.add_argument('--calcFeatures', action='store_true', help='Generate tile feature vectors for each 5x model.')
-	parser.add_argument('--pullROIs', action='store_true', help='Pull regions of interest using each 5x model.')
-	parser.add_argument('--best5xModels', nargs='+', type=int, default=None, help='Provide a list of best models to use for the 5x training (Use the epoch number; i.e. checkpoint_best_5x_150.pth would be model 150). You should provide 1 value per ensemble model (i.e. ensemble of 5 models should have 5 model numbers. Default will use the final saved checkpoints after training the 5x model.')
-	parser.add_argument('--epochs', type=int, default=200, help='Number of training epochs.')
+	optional_group.add_argument('--preprocess', action='store_true', help='Preprocess, filter, and tile WSI')
+	optional_group.add_argument('--generateDataSets', action='store_true', help='Generate the initial 5x datasets')
+	optional_group.add_argument('--train5x', action='store_true', help='Train a 5x ensemble model.')
+	optional_group.add_argument('--train20x', action='store_true', help='Train a 20x ensemble model.')
+	optional_group.add_argument('--calcFeatures', action='store_true', help='Generate tile feature vectors for each 5x model.')
+	optional_group.add_argument('--pullROIs', action='store_true', help='Pull regions of interest using each 5x model.')
+	optional_group.add_argument('--best5xModels', nargs='+', type=int, default=None, help='Provide a list of best models to use for the 5x training (Use the epoch number; i.e. checkpoint_best_5x_150.pth would be model 150). You should provide 1 value per ensemble model (i.e. ensemble of 5 models should have 5 model numbers. Default will use the final saved checkpoints after training the 5x model.')
+	optional_group.add_argument('--epochs', type=int, default=200, help='Number of training epochs.')
 
 
 	args = parser.parse_args()
+
+	project_dir = os.path.abspath(args.projectDir)
+	projectPath = os.path.dirname(project_dir)
+	project = os.path.basename(project_dir)
 
 
 	max_process_per_gpu = 1
@@ -90,23 +99,23 @@ def main ():
 		softLabel = True
 
 	if args.output is None:
-		outputPath = os.path.join(args.projectPath, "output")
+		outputPath = os.path.join(projectPath, "output")
 	else:
 		outputPath = args.output
 	if not os.path.exists(outputPath):
 		os.makedirs(outputPath)
 
-	tilePath = os.path.join(args.projectPath, "tiles_png")
+	tilePath = os.path.join(projectPath, "tiles_png")
 
 
 
 	############### Set up GPU parallelization if available ###############
 	#######################################################################
 	maxAvailableGPUs = torch.cuda.device_count()
-	if args.max_gpu:
-		max_seed = min(args.max_gpu, maxAvailableGPUs)
+	if args.max_gpu is None or args.max_gpu <= 0:
+		max_seed = maxAvailableGPUs if maxAvailableGPUs > 0 else 1
 	else:
-		max_seed = 1
+		max_seed = min(args.max_gpu, maxAvailableGPUs)
 	
 	if max_seed > args.ensemble:
 		max_seed = args.ensemble
@@ -150,15 +159,15 @@ def main ():
 		if args.preprocess:
 			print("\tPreprocessing slides:", flush=True)
 			print("\t\tFiltering and tiling image(s)...", end='', flush=True)
-			preproc.preprocess_images(args.project, args.projectPath, args.max_cpu, save_top_tiles, save_data, args.tileOverlap)
+			preproc.preprocess_images(project, projectPath, args.max_cpu, save_top_tiles, save_data, args.tileOverlap)
 			print("done")
 		if args.stainNorm:
 			print("\t\tNormalizing tissue staining...", end='', flush=True)
-			normalizeTileStain.multiprocess_stainNorm(tilePath, os.path.join(args.projectPath, "tiles_png_stainNorm"), args.max_cpu)
+			normalizeTileStain.multiprocess_stainNorm(tilePath, os.path.join(projectPath, "tiles_png_stainNorm"), args.max_cpu)
 			print("done", flush=True)
 
 	if args.stainNorm:
-		tilePath = os.path.join(args.projectPath, "tiles_png_stainNorm")	
+		tilePath = os.path.join(projectPath, "tiles_png_stainNorm")	
 	
 
 	################ Generate Data Structures  ######################
@@ -168,7 +177,7 @@ def main ():
 			# gatherDataSets.
 			pass
 		print("\t\tGathering datasets for training...", end='', flush=True)
-		gatherDataSets.generateDataStructures(args.project, args.projectPath, args.metadata, tilePath, outputPath, prediction=False, softLabel=softLabel)
+		gatherDataSets.generateDataStructures(project, projectPath, args.metadata, tilePath, outputPath, prediction=False, softLabel=softLabel)
 		print("done\n", flush=True)
 
 
@@ -195,7 +204,7 @@ def main ():
 		pool = multiprocessing.Pool(max_seed * max_process_per_gpu)
 		results = []
 		for i in range(max_seed):
-			r = pool.apply_async(utilsModel.generateFeatureVectorsUsingBestModels, args=(i, models_parallel[i], args.project, args.projectPath, args.python, outputPath, args.batch_size, args.dropoutRate, "5x", bestModels_parallel[i], args.checkpointModel))
+			r = pool.apply_async(utilsModel.generateFeatureVectorsUsingBestModels, args=(i, models_parallel[i], project, projectPath, args.python, outputPath, args.batch_size, args.dropoutRate, "5x", bestModels_parallel[i], args.checkpointModel))
 			results.append(r)
 		pool.close()
 		pool.join()
@@ -213,7 +222,7 @@ def main ():
 		pool = multiprocessing.Pool(max_seed * max_process_per_gpu)
 		results = []
 		for i in range(max_seed):
-			r = pool.apply_async(utilsModel.runMultiGpuROIs, args=(i, models_parallel[i], args.project, args.projectPath, args.python, outputPath, args.maxROI, args.max_cpu))
+			r = pool.apply_async(utilsModel.runMultiGpuROIs, args=(i, models_parallel[i], project, projectPath, args.python, outputPath, args.maxROI, args.max_cpu))
 		results.append(r)
 		pool.close()
 		pool.join()

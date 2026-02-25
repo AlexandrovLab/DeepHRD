@@ -38,6 +38,47 @@ The framework is written in Python; however, it also requires the following soft
 * NVIDIA GPU (tested on M60s via AWS EC2 instances and A100s on a custom cluster. Testing included the use of single GPUs as well as multiple GPUs in parallel)
 * See requirements.txt for a full list of Python packages used during training and testing.
 
+## Installation
+Install from PyPI:
+```bash
+pip install deephrd
+```
+
+Install from source (editable):
+```bash
+git clone https://github.com/AlexandrovLab/DeepHRD.git
+cd DeepHRD
+pip install -e .
+```
+
+Notes:
+* OpenSlide is a system dependency. Install it via your OS package manager before installing the Python package.
+* Use a CUDA-enabled PyTorch build if you plan to run on a GPU.
+
+## CLI usage
+After installation, the `deephrd` command is available and forwards arguments to the
+underlying modules.
+
+Show help:
+```bash
+deephrd -h
+```
+
+Run prediction:
+```bash
+deephrd predict --projectPath /your/project/path/ --project yourProjectNameSuchAsBRCA --output /your/output/path/ --model /path/to/models/ --workers 16 --BN_reps 10 --reportVerbose --preprocess --stainNorm --generateDataSets --predict5x --pullROIs --predict20x --predictionMasks
+```
+
+Run training:
+```bash
+deephrd train --projectPath /your/project/path/ --project yourProjectNameSuchAsBRCA --output /your/output/path/ --metadata /path/to/your/metadatafile.txt --ensemble 5 --dropoutRate 0.5 --stainNorm --generateDataSets --train5x --calcFeatures --pullROIs --train20x --workers 16 --epochs 200
+```
+
+Generate metadata:
+```bash
+deephrd generate_metadata --help
+```
+
 
 ## Prediction
 Instructions to perform a prediction on a single image or collection of images using one of the pre-trained models for breast or ovarian cancer:
@@ -123,8 +164,8 @@ file.
 |  | batch_size | Integer | How many tiles to include for each mini-batch. |
 |  | workers | Integer | Number of data loading workers. |
 |  | BN_reps | Integer | Number of MonteCarlo iterations to perform for bayesian network estimation. |
-|  | max_gpu | Integer | Number of gpus to use. |
-|  | max_cpu | Integer | Maximum number of CPUs to utilize for parallelization. |
+|  | max_gpu | Integer | Number of gpus to use (0 = all available). |
+|  | max_cpu | Integer | Maximum number of CPUs to utilize for parallelization (0 = all available). |
 |  | ensemble | Integer | Number of ensemble models to test. |
 |  | dropoutRate | Float | Rate of dropout to be used within the fully connected layers. Can be used for both prediction and training. |
 |  | maxROI | Integer | Number of maximum ROIs that can be selected. | 

@@ -19,9 +19,9 @@ import sys
 def runMultiGpuTraining (i, iModels, pythonVersion, outputPath, batch_size, dropoutRate, resolution, workers, epochs, checkpointModel=None):
 	for currentModel in iModels:
 		if resolution == "5x":
-			testCommand = pythonVersion + " base/train_mp.py --train_lib " + os.path.join(outputPath, "trainData.pt") + " --val_lib " + os.path.join(outputPath, "valData.pt") +  " --output " + os.path.join(outputPath, "training_m" + str(currentModel+1)) +  " --batch_size " + str(batch_size) + " --gpu " + str(i) + " --dropoutRate " + str(dropoutRate) + " --resolution " + resolution + " --workers " + str(workers) + " --epochs " + str(epochs)
+			testCommand = pythonVersion + " -m deephrd.base.train_mp --train_lib " + os.path.join(outputPath, "trainData.pt") + " --val_lib " + os.path.join(outputPath, "valData.pt") +  " --output " + os.path.join(outputPath, "training_m" + str(currentModel+1)) +  " --batch_size " + str(batch_size) + " --gpu " + str(i) + " --dropoutRate " + str(dropoutRate) + " --resolution " + resolution + " --workers " + str(workers) + " --epochs " + str(epochs)
 		elif resolution == "20x":
-			testCommand = pythonVersion + " base/train_mp.py --train_lib " + os.path.join(outputPath, "training_20x_m" + str(currentModel+1), "trainData20x.pt") + " --val_lib " + os.path.join(outputPath, "training_20x_m" + str(currentModel+1), "valData20x.pt") +  " --output " + os.path.join(outputPath, "training_20x_m" + str(currentModel+1)) +  " --batch_size " + str(batch_size) + " --gpu " + str(i) + " --dropoutRate " + str(dropoutRate) + " --resolution " + resolution + " --workers " + str(workers) + " --epochs " + str(epochs)
+			testCommand = pythonVersion + " -m deephrd.base.train_mp --train_lib " + os.path.join(outputPath, "training_20x_m" + str(currentModel+1), "trainData20x.pt") + " --val_lib " + os.path.join(outputPath, "training_20x_m" + str(currentModel+1), "valData20x.pt") +  " --output " + os.path.join(outputPath, "training_20x_m" + str(currentModel+1)) +  " --batch_size " + str(batch_size) + " --gpu " + str(i) + " --dropoutRate " + str(dropoutRate) + " --resolution " + resolution + " --workers " + str(workers) + " --epochs " + str(epochs)
 		else:
 			print("Resolution " + resolution + " is not currently supported.")
 			sys.exit()
@@ -37,7 +37,7 @@ def runMultiGpuInference (i, iModels, pythonVersion, outputPath, modelPath, batc
 	for currentModel in iModels:
 		if resolution == '5x':
 			# Non-dropout inference for extracting features of each tile.
-			testCommand = pythonVersion + " base/test_final.py --lib " + os.path.join(outputPath, "testData.pt") + " --output " + os.path.join(outputPath, "m" + str(currentModel+1)) + " --model " + os.path.join(modelPath,resolution + "_m" + str(i+1) + ".pth") +  " --batch_size " + str(batch_size) + " --BN_reps 1 --gpu " + str(i) + " --dropoutRate 0.0 --resolution " + resolution + " --workers " + str(workers) 
+			testCommand = pythonVersion + " -m deephrd.base.test_final --lib " + os.path.join(outputPath, "testData.pt") + " --output " + os.path.join(outputPath, "m" + str(currentModel+1)) + " --model " + os.path.join(modelPath,resolution + "_m" + str(currentModel+1) + ".pth") +  " --batch_size " + str(batch_size) + " --BN_reps 1 --gpu " + str(i) + " --dropoutRate 0.0 --resolution " + resolution + " --workers " + str(workers) 
 			testCommand2 = "mv " + os.path.join(outputPath, "m" + str(currentModel+1), "feature_vectors.tsv") + " " + os.path.join(outputPath, "m" + str(currentModel+1), "feature_vectors_test_" + resolution + ".tsv")
 			
 			# time.sleep(random.randrange(0, 4))
@@ -48,7 +48,7 @@ def runMultiGpuInference (i, iModels, pythonVersion, outputPath, modelPath, batc
 
 			# Additional inference for all BN-reps with the specified dropout rate (default 0.2).
 			if dropoutRate > 0:
-				testCommand = pythonVersion + " base/test_final.py --lib " + os.path.join(outputPath, "testData.pt") + " --output " + os.path.join(outputPath, "m" + str(currentModel+1)) + " --model " + os.path.join(modelPath,resolution + "_m" + str(i+1) + ".pth") + " --batch_size " + str(batch_size) + " --BN_reps " + str(BN_reps) + " --gpu " + str(i) + " --dropoutRate " + str(dropoutRate) + " --resolution " + resolution + " --workers " + str(workers) 		
+				testCommand = pythonVersion + " -m deephrd.base.test_final --lib " + os.path.join(outputPath, "testData.pt") + " --output " + os.path.join(outputPath, "m" + str(currentModel+1)) + " --model " + os.path.join(modelPath,resolution + "_m" + str(currentModel+1) + ".pth") + " --batch_size " + str(batch_size) + " --BN_reps " + str(BN_reps) + " --gpu " + str(i) + " --dropoutRate " + str(dropoutRate) + " --resolution " + resolution + " --workers " + str(workers) 		
 				testCommand3 = "mv " + os.path.join(outputPath, "m" + str(currentModel+1), "predictions.csv") + " " + os.path.join(outputPath, "m" + str(currentModel+1), "predictions_" + resolution + ".csv")
 				os.system(testCommand)
 				os.system(testCommand3)
@@ -56,7 +56,7 @@ def runMultiGpuInference (i, iModels, pythonVersion, outputPath, modelPath, batc
 
 		else:
 			# Non-dropout inference for extracting features of each tile.
-			testCommand = pythonVersion + " base/test_final.py --lib " + os.path.join(outputPath, "m" + str(i+1), "ROI", "testData20x.pt") + " --output " + os.path.join(outputPath, "m" + str(currentModel+1)) + " --model " + os.path.join(modelPath,resolution + "_m" + str(i+1) + ".pth") +  " --batch_size " + str(batch_size) + " --BN_reps 1 --gpu " + str(i) + " --dropoutRate 0.0 --resolution " + resolution + " --workers " + str(workers) 
+			testCommand = pythonVersion + " -m deephrd.base.test_final --lib " + os.path.join(outputPath, "m" + str(currentModel+1), "ROI", "testData20x.pt") + " --output " + os.path.join(outputPath, "m" + str(currentModel+1)) + " --model " + os.path.join(modelPath,resolution + "_m" + str(currentModel+1) + ".pth") +  " --batch_size " + str(batch_size) + " --BN_reps 1 --gpu " + str(i) + " --dropoutRate 0.0 --resolution " + resolution + " --workers " + str(workers) 
 			testCommand2 = "mv " + os.path.join(outputPath, "m" + str(currentModel+1), "feature_vectors.tsv") + " " + os.path.join(outputPath, "m" + str(currentModel+1), "feature_vectors_test_" + resolution + ".tsv")
 			# time.sleep(random.randrange(0, 4))
 			os.system(testCommand)
@@ -65,7 +65,7 @@ def runMultiGpuInference (i, iModels, pythonVersion, outputPath, modelPath, batc
 
 			# Additional inference for all BN-reps with the specified dropout rate (default 0.2).
 			if dropoutRate > 0:
-				testCommand = pythonVersion + " base/test_final.py --lib " + os.path.join(outputPath, "m" + str(i+1), "ROI", "testData20x.pt")+ " --output " + os.path.join(outputPath, "m" + str(currentModel+1)) + " --model " + os.path.join(modelPath,resolution + "_m" + str(i+1) + ".pth") + " --batch_size " + str(batch_size) + " --BN_reps " + str(BN_reps) + " --gpu " + str(i) + " --dropoutRate " + str(dropoutRate) + " --resolution " + resolution + " --workers " + str(workers) 		
+				testCommand = pythonVersion + " -m deephrd.base.test_final --lib " + os.path.join(outputPath, "m" + str(currentModel+1), "ROI", "testData20x.pt")+ " --output " + os.path.join(outputPath, "m" + str(currentModel+1)) + " --model " + os.path.join(modelPath,resolution + "_m" + str(currentModel+1) + ".pth") + " --batch_size " + str(batch_size) + " --BN_reps " + str(BN_reps) + " --gpu " + str(i) + " --dropoutRate " + str(dropoutRate) + " --resolution " + resolution + " --workers " + str(workers) 		
 				testCommand3 = "mv " + os.path.join(outputPath, "m" + str(currentModel+1), "predictions.csv") + " " + os.path.join(outputPath, "m" + str(currentModel+1), "predictions_" + resolution + ".csv")
 				os.system(testCommand)
 				os.system(testCommand3)
@@ -86,21 +86,21 @@ def generateFeatureVectorsUsingBestModels (i, iModels, project, projectPath, pyt
 			bestModel = os.path.join(modelPath, existingCheckpointModels[existingCheckpointModelNumbers.index(max(existingCheckpointModelNumbers))])
 
 		# Run Train, Validation, and test data through best checkpoint from above
-		testCommand = pythonVersion + " base/test_final.py --lib " + os.path.join(outputPath, "trainData.pt") + " --output " + os.path.join(outputPath, "training_m" + str(currentModel+1)) + " --model " + bestModel + " --batch_size " + str(batch_size) + " --BN_reps 1 --gpu " + str(i) + " --dropoutRate 0.0 --resolution " + resolution
+		testCommand = pythonVersion + " -m deephrd.base.test_final --lib " + os.path.join(outputPath, "trainData.pt") + " --output " + os.path.join(outputPath, "training_m" + str(currentModel+1)) + " --model " + bestModel + " --batch_size " + str(batch_size) + " --BN_reps 1 --gpu " + str(i) + " --dropoutRate 0.0 --resolution " + resolution
 		testCommand2 = "mv " + os.path.join(outputPath, "training_m" + str(currentModel+1), "predictions.csv") + " " + os.path.join(outputPath, "training_m" + str(currentModel+1), "predictions_train.csv")
 		testCommand3 = "mv " + os.path.join(outputPath, "training_m" + str(currentModel+1), "feature_vectors.tsv") + " " + os.path.join(outputPath, "training_m" + str(currentModel+1), "feature_vectors_train.tsv")
 		os.system(testCommand)
 		os.system(testCommand2)
 		os.system(testCommand3)
 
-		testCommand = pythonVersion + " base/test_final.py --lib " + os.path.join(outputPath, "valData.pt") + " --output " + os.path.join(outputPath, "training_m" + str(currentModel+1)) + " --model " + bestModel + " --batch_size " + str(batch_size) + " --BN_reps 1 --gpu " + str(i) + " --dropoutRate 0.0 --resolution " + resolution
+		testCommand = pythonVersion + " -m deephrd.base.test_final --lib " + os.path.join(outputPath, "valData.pt") + " --output " + os.path.join(outputPath, "training_m" + str(currentModel+1)) + " --model " + bestModel + " --batch_size " + str(batch_size) + " --BN_reps 1 --gpu " + str(i) + " --dropoutRate 0.0 --resolution " + resolution
 		testCommand2 = "mv " + os.path.join(outputPath, "training_m" + str(currentModel+1), "predictions.csv") + " " + os.path.join(outputPath, "training_m" + str(currentModel+1), "predictions_val.csv")
 		testCommand3 = "mv " + os.path.join(outputPath, "training_m" + str(currentModel+1), "feature_vectors.tsv") + " " + os.path.join(outputPath, "training_m" + str(currentModel+1), "feature_vectors_val.tsv")
 		os.system(testCommand)
 		os.system(testCommand2)
 		os.system(testCommand3)
 
-		testCommand = pythonVersion + " base/test_final.py --lib " + os.path.join(outputPath, "testData.pt") + " --output " + os.path.join(outputPath, "training_m" + str(currentModel+1)) + " --model " + bestModel + " --batch_size " + str(batch_size) + " --BN_reps 1 --gpu " + str(i) + " --dropoutRate 0.0 --resolution " + resolution
+		testCommand = pythonVersion + " -m deephrd.base.test_final --lib " + os.path.join(outputPath, "testData.pt") + " --output " + os.path.join(outputPath, "training_m" + str(currentModel+1)) + " --model " + bestModel + " --batch_size " + str(batch_size) + " --BN_reps 1 --gpu " + str(i) + " --dropoutRate 0.0 --resolution " + resolution
 		testCommand2 = "mv " + os.path.join(outputPath, "training_m" + str(currentModel+1), "predictions.csv") + " " + os.path.join(outputPath, "training_m" + str(currentModel+1), "predictions_test.csv")
 		testCommand3 = "mv " + os.path.join(outputPath, "training_m" + str(currentModel+1), "feature_vectors.tsv") + " " + os.path.join(outputPath, "training_m" + str(currentModel+1), "feature_vectors_test.tsv")
 		os.system(testCommand)
@@ -114,12 +114,12 @@ def generateFeatureVectorsUsingBestModels (i, iModels, project, projectPath, pyt
 def runMultiGpuROIs (i, iModels, project, projectPath, pythonVersion, outputPath, maxROI, max_cpu, predict=False):
 	for currentModel in iModels:
 		if predict:
-			roiCommand = pythonVersion + " base/pullROIs.py --project " + project + " --projectPath " + outputPath + " --output " +  os.path.join(outputPath, "m" + str(currentModel+1), "ROI") + " --objectiveFile " + \
+			roiCommand = pythonVersion + " -m deephrd.base.pullROIs --project " + project + " --projectPath " + outputPath + " --output " +  os.path.join(outputPath, "m" + str(currentModel+1), "ROI") + " --objectiveFile " + \
 						os.path.join(projectPath, "objectiveInfo.txt") + " --slidePath " + os.path.join(projectPath, project) + " --tileConv " + \
 						os.path.join(projectPath, "slideNumberToSampleName.txt") + " --test_lib " + os.path.join(outputPath, "testData.pt") + " --feature_vectors_test " + os.path.join(outputPath, "m" + str(currentModel+1), "feature_vectors_test_5x.tsv") + \
 						" --maxROI " + str(maxROI) + " --max_cpu " + str(max_cpu) + " --predict"
 		else:
-			roiCommand = pythonVersion + " base/pullROIs.py --project " + project + " --projectPath " + outputPath + " --output " +  os.path.join(outputPath, "training_20x_m" + str(currentModel+1)) + " --objectiveFile " + \
+			roiCommand = pythonVersion + " -m deephrd.base.pullROIs --project " + project + " --projectPath " + outputPath + " --output " +  os.path.join(outputPath, "training_20x_m" + str(currentModel+1)) + " --objectiveFile " + \
 						os.path.join(projectPath, "objectiveInfo.txt") + " --slidePath " + os.path.join(projectPath, project) + " --tileConv " + \
 						os.path.join(projectPath, "slideNumberToSampleName.txt") + " --test_lib " + os.path.join(outputPath, "testData.pt") + " --feature_vectors_test " + os.path.join(outputPath, "training_m" + str(currentModel+1), "feature_vectors_test.tsv") + \
 						" --train_lib " + os.path.join(outputPath, "trainData.pt") + " --feature_vectors_train " + os.path.join(outputPath, "training_m" + str(currentModel+1), "feature_vectors_train.tsv") + \

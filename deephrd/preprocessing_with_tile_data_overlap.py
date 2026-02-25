@@ -8,7 +8,7 @@ import PIL
 from PIL import Image
 import re
 import sys
-import utilsPreprocessing as util 
+from deephrd import utilsPreprocessing as util 
 import sys
 import skimage.morphology as sk_morphology
 import pandas as pd
@@ -86,6 +86,57 @@ def get_filter_image_result(slide_number):
 		SCALE_FACTOR) + "x-" + str(large_w) + "x" + str(large_h) + "-" + str(small_w) + "x" + str(
 		small_h) + "-" + FILTER_RESULT_TEXT + "." + DEST_TRAIN_EXT)
 	return(img_path)
+
+
+def _normalize_slide_key(slide_num):
+	return str(slide_num).zfill(3)
+
+
+def get_objective_power(slide_num, slide_path=None):
+	objective_path = os.path.join(BASE_DIR, "objectiveInfo.txt")
+	slide_key = _normalize_slide_key(slide_num)
+	if os.path.exists(objective_path):
+		objective_power_info = pd.read_csv(
+			objective_path,
+			header=None,
+			names=['objective_power'],
+			index_col=0,
+			sep="\t",
+			dtype={0: str}
+		)
+		objective_power_info.index = objective_power_info.index.map(lambda x: str(x).zfill(3))
+		if slide_key in objective_power_info.index:
+			return int(objective_power_info.loc[slide_key, 'objective_power'])
+
+	if slide_path is None:
+		slide_path = util.get_training_slide_path(SRC_TRAIN_DIR, slide_num)
+
+	slide = None
+	try:
+		slide = util.openSlide(slide_path)
+		if abs(0.25 - float(slide.properties['openslide.mpp-x'])) < abs(0.5 - float(slide.properties['openslide.mpp-x'])):
+			objective_power = 40
+		else:
+			objective_power = 20
+	except Exception:
+		objective_power = 10
+		try:
+			if 'skippedSamps' in globals() and skippedSamps:
+				print(slide_path, file=skippedSamps, flush=True, end="\t")
+				if slide is not None:
+					for x in slide.properties:
+						print("\t".join([str(x), str(slide.properties[x])]), end="\t", flush=True, file=skippedSamps)
+				print(file=skippedSamps, flush=True)
+		except Exception:
+			pass
+
+	try:
+		with open(objective_path, "a") as out:
+			print("\t".join([slide_key, str(objective_power)]), file=out)
+	except Exception:
+		pass
+
+	return objective_power
 
 
 def summary_stats(tile_summary):
@@ -539,7 +590,7 @@ def slide_to_scaled_pil_image(slide_number, slide):
 			print("\t".join([str(x), str(slide.properties[x])]), end = "\t", flush=True, file=skippedSamps)
 		print(file=skippedSamps, flush=True)
 
-	with open(BASE_DIR + "objectiveInfo.txt", "a") as out:
+	with open(os.path.join(BASE_DIR, "objectiveInfo.txt"), "a") as out:
 		print("\t".join([str(slide_number).zfill(3), str(objective_power)]), file=out)
 
 	level = slide.get_best_level_for_downsample(SCALE_FACTOR)
@@ -797,8 +848,7 @@ def score_tiles(slide_num, np_img=None, dimensions=None, small_tile_in_tile=Fals
 		TileSummary object which includes a list of Tile objects containing information about each tile.
 	"""
 
-	objective_powerInfo = pd.read_csv(BASE_DIR+"objectiveInfo.txt", header=None, names=['objective_power'], index_col=0, sep="\t")
-	objective_power = int(objective_powerInfo.loc[slide_num, 'objective_power'])
+	objective_power = get_objective_power(slide_num, slide_path=util.get_training_slide_path(SRC_TRAIN_DIR, slide_num))
 	if objective_power == 40:
 		if RESOLUTION == '5x':
 			stepSize = 8
@@ -993,8 +1043,7 @@ def tile_to_pil_tile(tile, imageSlide):
 	s = util.openSlide(slide_filepath)
 	x, y = t.o_c_s, t.o_r_s
 	w, h = t.o_c_e - t.o_c_s, t.o_r_e - t.o_r_s
-	objective_powerInfo = pd.read_csv(BASE_DIR+"objectiveInfo.txt", header=None, names=['objective_power'], index_col=0, sep="\t")
-	objective_power = int(objective_powerInfo.loc[t.slide_num, 'objective_power'])
+	objective_power = get_objective_power(t.slide_num, slide_path=slide_filepath)
 
 	if objective_power == 40:
 		if RESOLUTION == '5x':
@@ -1149,7 +1198,7 @@ def multiprocess_training_slides_to_images(numProcessors=None):
 	Each process will process a range of slide numbers.
 	"""
 
-	with open(BASE_DIR + "objectiveInfo.txt", "w") as out:
+	with open(os.path.join(BASE_DIR, "objectiveInfo.txt"), "w") as out:
 		pass
 
 	# how many processes to use

@@ -23,7 +23,7 @@ def getNumberOfSlides(path, extension):
 
 
 def writeSlideNumberSampleNameToFile (projectDir, num_train_images, train_images):
-	with open(projectDir + "slideNumberToSampleName.txt", "w") as f:
+	with open(os.path.join(projectDir, "slideNumberToSampleName.txt"), "w") as f:
 		for i in range(0, num_train_images, 1):
 			print("\t".join([str(i+1).zfill(3), train_images[i].split("/")[-1].split(".")[0]]), file=f)
 
